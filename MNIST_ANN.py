@@ -10,7 +10,7 @@
 #
 # Notes on performance: 
 # - Dependencies include numpy and matplotlib
-# - Achieves ~ 98% classification rate on a [375,75] architecture over 2000 iterations in 6 minutes
+# - Achieves ~ 98% classification rate on a [800,800] architecture over 1000 iterations in 12 minutes
 # - Requires about 2 GB or RAM
 # 
 # Notes on structure:
@@ -19,19 +19,22 @@
 # - Training involves the core neural network algorithm
 # - Testing opens MNIST test data, applies trained model, and evaluates performance
 # - Added feature to save model parameters if performance exceeds 96% on test data
-#
+# - Changed activation function to 1.7519 tanh(2/3z) in line with LeCun's Efficient Backprop guidelines
+# - Added dropout procedure
+# 
 # Features to add for improvement:
 # - Classification evaluation algorithm can be further optimized
 # - Neuro-evolution for optimal architecture
 # - Weight decay
 # - Adaptive learning rate with gradients
+# - Cross-entropy
 # - GPU implementation
 # 
-# Current performance: 98.02%
+# Current performance: 98.22%
 # Goal: 99% classification rate
 
 
-# Created by Miguel Benavides on July 15, 2016
+# Created by Miguel Benavides on August 18, 2016
 #
 # GitHub: https://github.com/MiguelBenavides/machine-learning
 # Email: migibenavides@gmail.com
@@ -40,6 +43,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import random
 
 print "Loading MNIST training set..."
 print "-----------------------------"
@@ -89,7 +93,7 @@ X_full_train = np.concatenate((np.ones((n_train,1)),X_full_train),axis = 1)
 ### TRAINING STAGE
 
 # Parse data into training and validation sets
-r = 0.9
+r = 5./6.
 index_train = np.random.choice([True,False],n_train,p=[r,1-r])
 index_validate = ~ index_train
 
@@ -105,24 +109,27 @@ print "-----------------------------"
 # Build neural network
 
 # Set hyperparameters, k as the number of hidden layers
-nodes = [400,75] # Neural network architecture [x1,x2,..] where xi is the number of nodes in layer i
+nodes = [200,200] # Neural network architecture [x1,x2,..] where xi is the number of nodes in layer i
 k = len(nodes)
-nu = 1.5 # learning rate
+nu = 0.15 # learning rate
+nu_adapt = nu
 gamma = 0.001 # adaptive learning rate hyperparameter / nu decay
+dropout_p = 0.2
+
 print "Setting hyperparameters..."
 print "Number of layers:",k
 print "Architecture:", nodes
 print "Learning rate:", nu
+print "Dropout rate:", dropout_p
 print "-----------------------------"
 
 # Create initial minibatches
-r_batch = 0.01
+r_batch = 0.1
 index_batch = np.random.choice([True,False],X_train.shape[0],p=[r_batch,1-r_batch])
 X_batch =  X_train[index_batch]
 y_batch = y_train[index_batch]
 
 # Construct weight matrices 
-
 initial_normal = False
 initial_uniform = True
 
@@ -150,58 +157,58 @@ errors_classification = []
 # Iteration options (user defined)
 track_validation = True
 track_classification = False
-nu_decay = True
+nu_decay = False
+display_plot = False
 
 print "Initializing neural network training..."
 
 # Define forward propagation
 def forward_propagate(X):
-	s = np.tanh(X.dot(W[0]))
+	s = 1.7159 * np.tanh(2./3.*(X.dot(W[0])))
 	s = np.append(np.ones((s.shape[0],1)),s,axis = 1) # Append bias node
 	Z = [s]
 	for i in range(1,k):
-		s = np.tanh(Z[i-1].dot(W[i]))
+		s = 1.7159 * np.tanh(2./3. * (Z[i-1].dot(W[i])))
 		s = np.append(np.ones((s.shape[0],1)),s,axis = 1) # Append bias node
 		Z.append(s)
-	return np.tanh(Z[k-1].dot(W[k]))
+	return 1.7159 * np.tanh(2./3. * (Z[k-1].dot(W[k])))
 
 # Begin timing main loop
 start_time = time.time()
 iteration_limit = 2000
 
 while iteration <= iteration_limit:
+	
+	iteration += 1
 
 	# Create minibatches
 	index_batch = np.random.choice([True,False],X_train.shape[0],p=[r_batch,1-r_batch])
 	X_batch =  X_train[index_batch]
 	y_batch = y_train[index_batch]
 
-	# Feedforward Z's and Z_prime's
-	temp = np.tanh(X_batch.dot(W[0]))
+	# Feedforward Z's and Z_prime's with dropout
+	temp = 1.7159 * np.tanh(2./3. * (X_batch.dot(W[0])))
 	temp = np.append(np.ones((temp.shape[0],1)),temp,axis = 1) # Append bias node
+	temp *= np.random.binomial(n = 1,p = 1. - dropout_p, size = ((temp.shape[0],temp.shape[1]))) # Drop out
 	Z = [temp]
-	Z_prime = Z_prime = [(1. - (np.tanh(X_batch.dot(W[0]))) ** 2).T]
+	Z_prime = Z_prime = [1.1439 * (1. - (np.tanh(2./3. * (X_batch.dot(W[0])))) ** 2).T]
 
 	for i in range(1,k):
 		temp = np.tanh(Z[i-1].dot(W[i]))
 		temp = np.append(np.ones((temp.shape[0],1)),temp,axis = 1) # Append bias node
+		temp *= np.random.binomial(n = 1,p = 1. - dropout_p, size = ((temp.shape[0],temp.shape[1]))) # Drop out
 		Z.append(temp)
-		temp = (1.-(np.tanh(Z[i-1].dot(W[i]))) ** 2).T
+		temp = (1.1439 * (1.-(np.tanh(2./3.*(Z[i-1].dot(W[i])))) ** 2)).T
 		Z_prime.append(temp)
 
-	y_hat = np.tanh(Z[k-1].dot(W[k]))
+	y_hat = 1.7159 * np.tanh(2./3. * (Z[k-1].dot(W[k])))
 
 	# Backpropagation
 	delta_hat = (y_hat - y_batch).T
 	delta = [Z_prime[k-1] * W[k][1:,:].dot(delta_hat)]
+
 	for i in range(1,k):
 		delta.append(Z_prime[k-i-1] * W[k-i][1:,:].dot(delta[i-1]))
-
-	# Adapt learning rate
-	if nu_decay == True:
-		nu_adapt = nu / (1.+iteration*gamma)**2
-	else:
-		nu_adapt = nu
 
 	# Update weights
 	deltaW = [-nu_adapt * (delta[k-1].dot(X_batch)).T]
@@ -212,11 +219,16 @@ while iteration <= iteration_limit:
 	for i in range(k):
 		W[i] += deltaW[i]
 
-	# In-sample error
-	error = 0.5 * (y_batch - y_hat).T.dot(y_batch - y_hat)
-	errors.append(error[0,0])
+	# Adapt learning rate
+	if nu_decay == True:
+		nu_adapt = nu_adapt / (1. + iteration*gamma) ** 2
+	else:
+		nu_adapt = nu
 
-	iteration += 1
+	# In-sample error
+	if display_plot == True:
+		error = 0.5 * (y_batch - y_hat).T.dot(y_batch - y_hat)
+		errors.append(error[0,0])
 
 	# Track validation error
 	if track_validation == True:
@@ -246,6 +258,7 @@ while iteration <= iteration_limit:
 	
 	# Display classification rate per epoch
 	if track_classification == True:
+
 		# Forward propagate using validation data
 		y_validate_hat = forward_propagate(X_validate)
 		y_validate_hat_predict = np.apply_along_axis(hardmax,1,y_validate_hat)
@@ -259,6 +272,7 @@ while iteration <= iteration_limit:
 				count += 1.
 		performance = (count / m) * 100.
 		errors_classification.append(performance)
+
 		print iteration, "Classification rate:", performance,"%","(%i / %i)" %(count,m)
 
 print "-----------------------------"
@@ -281,8 +295,6 @@ print "Number of training examples:", X_train.shape[0]
 print "Correctly classified", int(count)
 print "Number of validation examples:", y_model_predict_training.shape[0]
 print "Validation classification rate:", (count / y_model_predict_training.shape[0]) * 100.,"%"
-
-display_plot = False
 
 if display_plot == True:
 # Plot errors
@@ -327,7 +339,7 @@ for i in range(n_test):
 
 # Construct and normalize data
 X_full_test = np.array(data_test,dtype = float) / 255.
-X_full_test -= np.mean(X_full_test,axis =0)
+X_full_test -= np.mean(X_full_test,axis = 0)
 y_full_test = np.array(label_test,dtype = float)
 
 # Append bias nodes
@@ -357,7 +369,7 @@ model_performance = (count / y_model_predict.shape[0]) * 100.
 print "Final test classification rate:", model_performance, "%"
 
 # Save model if performance > 98% 
-if model_performance > 98.:
+if model_performance > 98.5:
 	print "Saving model parameters..."
 	model = open("mnist_model_parameters.txt","w")
 	model.write("MNIST Neural Network Model Parameters\n")
@@ -373,4 +385,3 @@ if model_performance > 98.:
 	for i in range(len(W)):
 		model.write("W[%i]:\n%r\n" %(i,W[i].tolist()))
 	model.close()
-
