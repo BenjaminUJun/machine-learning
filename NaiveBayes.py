@@ -1,6 +1,14 @@
-# NaiveBayes.py
-# Implementation of naive Bayes algorithm from scratch
+#
+#		Filename: NaiveBayes.py
+#		Naive Bayes Algorithm on Binary Classification
+#
+# Implementation of naive Bayes algorithm from scratch on a credit classification data set
 # Accuracy ~ 75%
+#
+# Created by Miguel Benavides on September 1, 2016
+#
+# GitHub: https://github.com/MiguelBenavides/machine-learning
+# Email: migibenavides@gmail.com
 
 import csv
 import pandas as pd
@@ -35,7 +43,7 @@ y = pd.get_dummies(y).iloc[:,0]
 ### BUILD MODEL
 for k in range(50):
 
-	X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.5)
+	X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.4)
 
 	## Construct prior tables
 	y_good = y_train.loc[y_train.loc[y_train == 0.].index]
@@ -47,8 +55,7 @@ for k in range(50):
 	n_good_total = X_train.loc[y_good.index].shape[0]
 	n_bad_total = X_train.loc[y_bad.index].shape[0]
 
-	p_good = float(n_good_total) / float(n_total)
-	p_bad = 1. - p_good
+
 
 	# Calculate categorical priors
 	p_good_priors = []
@@ -86,8 +93,8 @@ for k in range(50):
 		x_profile = X_test.iloc[j,:-6]
 		x_profile = x_profile.loc[x_profile == 1.]
 
-		p_good = 1.
-		p_bad = 1.
+		p_good = float(n_good_total) / float(n_total)
+		p_bad = 1. - p_good
 
 		# Calculate posteriors for categoricals
 		for i in range(len(list(x_profile.index))):
