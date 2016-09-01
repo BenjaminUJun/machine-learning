@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn import cross_validation
 
+### PROCESS DATA
+
 raw_data = pd.read_csv('GermanCredit.csv')
 raw_data = raw_data.dropna(subset=["credit_history", "purpose","savings_status", "employment", "property_magnitude"])
 y = raw_data.iloc[:,-1]
@@ -31,12 +33,12 @@ numerical_names = list(raw_data.ix[:,numerical_indexes].columns)
 
 # Vectorize categoricals
 x_cat_vector = pd.get_dummies(raw_data.iloc[:,categorical_indexes[0]], prefix = categorical_names[0])
-
 for i in range(1,len(categorical_indexes)):
 	x_cat_vector = pd.concat([x_cat_vector,pd.get_dummies(raw_data.iloc[:,categorical_indexes[i]],prefix = categorical_names[i])],axis = 1)
 
 x_num = pd.get_dummies(raw_data.iloc[:,numerical_indexes])
 
+# Combine categoricals and numerical features
 X = pd.concat([x_cat_vector,x_num], axis = 1)
 y = pd.get_dummies(y).iloc[:,0]
 
@@ -55,8 +57,6 @@ for k in range(50):
 	n_good_total = X_train.loc[y_good.index].shape[0]
 	n_bad_total = X_train.loc[y_bad.index].shape[0]
 
-
-
 	# Calculate categorical priors
 	p_good_priors = []
 	p_bad_priors = []
@@ -68,10 +68,9 @@ for k in range(50):
 	p_good_priors = dict(p_good_priors)
 	p_bad_priors = dict(p_bad_priors)
 
+	# Calculate numerical priors, assume Gaussian, estimate parameters (mean, variance)
 	p_good_priors_gauss = []
 	p_bad_priors_gauss = []
-	# Calculate numerical priors, assume Gaussian, estimate parameters (mean, variance)
-
 	for i in range(X_train.shape[1]-6,X_train.shape[1]):
 		p_good_priors_gauss.append([X_train.ix[y_good.index,i].name,
 			[X_train.ix[y_good.index,i].mean(),
