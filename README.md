@@ -11,25 +11,21 @@ Twitter: @migibenavides
 Email: migibenavides@gmail.com
 
 -------------------------------------------------------------------------------------------
-## Algorithms
-- Neural Networks:
--   Simple multilayer perceptron
--   Stochastic gradient descent implementation
--   Time series forecasting ANN
--   MNIST classifier
-- Support Vector Machines:
--   Hard-margin binary classifier
--   Soft-margin binary classifer
-- Perceptron
+## Models
+- Neural Networks
+- Support Vector Machines
+- Regression Models (linear, logistic, polynomial, ridge, lasso, etc.)
+- Naive Bayes
+- K Nearest Neighbors
+- Decision Trees
+- Random Forests / Ensemble Methods
 -------------------------------------------------------------------------------------------
 ## Upcoming projects:
-- Upgrades to MNIST classifier neural network
--   Neuro-evolution
--   Adaptive learning and gradient descent
--   Goal: 98%
+- Restricted Boltzmann Machines
+- Autoencoders
+- Deep Belief Networks
 - Convolutional neural networks (CNN)
-- Recurrent neural networks
+- Recurrent neural networks (RNN)
 -   General RNN
 -   Long Short Term Memory (LSTM) RNN
--     Text generator
 -------------------------------------------------------------------------------------------
